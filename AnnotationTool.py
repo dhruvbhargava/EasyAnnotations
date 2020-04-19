@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QWidget as widget
 import PyQt5.QtCore as QtCore
 import BoundingBox as BB
 from BoundingBox import TaggedObject as obj
+from SelectorLayover import SelectorOverlay as SO
 import XMLGenerator as xmgen
 
 
@@ -23,7 +24,8 @@ class FolderSelectionUI(widget):
                      'top': 10, 'width': 500, 'height': 550}
         self.GridCell = {
             'verticle': self.dims['height']/20, 'horizontal': self.dims['width']/20}
-        self.setGeometry(self.GridCell['horizontal']*5,self.GridCell['verticle']*20,self.GridCell['horizontal']*20,self.GridCell['verticle']*20)
+        self.setGeometry(self.GridCell['horizontal']*5,self.GridCell['verticle']*16,self.GridCell['horizontal']*20,self.GridCell['verticle']*16)
+        self.Fixed = False
         self.Screen()
 
     def seletFolderInput(self):
@@ -32,14 +34,20 @@ class FolderSelectionUI(widget):
         if dir != '':
             self.InputPathField.setText(dir+'/')
     
+    def fixedBoxCheckedHandler(self):
+        if not self.FixedBoxChecked.isChecked():
+            self.BoundingBoxHeightField.setReadOnly(True)
+            self.BoundingBoxWidthField.setReadOnly(True)
+        else:
+            self.BoundingBoxHeightField.setReadOnly(False)
+            self.BoundingBoxWidthField.setReadOnly(False)
+    
     def seletFolderAnnotation(self):
         dir = widgets.QFileDialog.getExistingDirectory(self, 
                       "Open Save Directory", options=widgets.QFileDialog.DontUseNativeDialog)
         if dir != '':
             self.AnnotationsPathField.setText(dir+'/')
         
-            
-
     def Navigate(self):
         self.build_params['FOLDER PATH'] =  str(self.InputPathField.text())
         self.build_params['ANNOTATION PATH'] = str(self.AnnotationsPathField.text())
@@ -60,7 +68,7 @@ class FolderSelectionUI(widget):
                     self.InputLabel.setText("**NO IMAGES IN THE SPECIFIED FOLDER **")
                     return 
                 if os.path.isdir(self.build_params['ANNOTATION PATH']):
-                    self.cams = Main(self.build_params['FOLDER PATH'],self.build_params['ANNOTATION PATH'],self.BoundingBoxWidthField.text(),self.BoundingBoxHeightField.text())
+                    self.cams = Main(self.build_params['FOLDER PATH'],self.build_params['ANNOTATION PATH'],self.BoundingBoxWidthField.text(),self.BoundingBoxHeightField.text(),self.FixedBoxChecked.isChecked())
                     self.cams.show()
                     self.close()                                   
                 else:
@@ -74,44 +82,48 @@ class FolderSelectionUI(widget):
         GoButton = widgets.QPushButton('GO',self)
         SelectButton = widgets.QPushButton('Select',self)
         SelectButton2 = widgets.QPushButton('Select',self)
+        self.FixedBoxChecked = widgets.QCheckBox('Fixed Size Bounding Box ',self)
         self.InputPathField = widgets.QLineEdit(self)
         self.AnnotationsPathField = widgets.QLineEdit(self)
         self.BoundingBoxWidthField = widgets.QLineEdit(self)
-        self.WidthLabel = widgets.QLabel('BBox Width',self)
-        self.HeightLabel = widgets.QLabel('BBox Height',self)
+        self.WidthLabel = widgets.QLabel('Width:',self)
+        self.HeightLabel = widgets.QLabel('Height:',self)
         self.BoundingBoxHeightField = widgets.QLineEdit(self)
-        self.InputLabel = widgets.QLabel('** FULL FOLDER PATH IMAGES**', self)
-        self.AnnotationsLabel = widgets.QLabel('** FULL SAVE PATH ANNOTATIONS FOLDER**', self)
+        self.InputLabel = widgets.QLabel('Images Path', self)
+        self.AnnotationsLabel = widgets.QLabel('Annotations Path', self)
         self.InputLabel.move(self.GridCell['horizontal']
                         * 1, self.GridCell['verticle']*1)
         self.AnnotationsLabel.move(self.GridCell['horizontal']
-                        * 1, self.GridCell['verticle']*5)                        
+                        * 1, self.GridCell['verticle']*4.5)                        
         GoButton.move(self.GridCell['horizontal']
-                        * 15.75, self.GridCell['verticle']*16)                        
+                        * 15.75, self.GridCell['verticle']*14)                        
         SelectButton.move(self.GridCell['horizontal']
-                        * 15.75, self.GridCell['verticle']*4)   
+                        * 15.75, self.GridCell['verticle']*3.2)   
         SelectButton2.move(self.GridCell['horizontal']
-                        * 15.75, self.GridCell['verticle']*8)                                                    
+                        * 15.75, self.GridCell['verticle']*6.7)                                                    
         self.InputPathField.resize(
-            self.GridCell['horizontal']*18, self.GridCell['verticle']*1.5)
+            self.GridCell['horizontal']*18, self.GridCell['verticle']*1)
         self.BoundingBoxWidthField.resize(
-            self.GridCell['horizontal']*5, self.GridCell['verticle']*1.5)
+            self.GridCell['horizontal']*5, self.GridCell['verticle']*1)
         self.BoundingBoxHeightField.resize(
-            self.GridCell['horizontal']*5, self.GridCell['verticle']*1.5)
+            self.GridCell['horizontal']*5, self.GridCell['verticle']*1)
         self.AnnotationsPathField.resize(
-            self.GridCell['horizontal']*18, self.GridCell['verticle']*1.5)
+            self.GridCell['horizontal']*18, self.GridCell['verticle']*1)
         self.InputPathField.move(
             self.GridCell['horizontal']*1, self.GridCell['verticle']*2)
         self.AnnotationsPathField.move(
-            self.GridCell['horizontal']*1, self.GridCell['verticle']*6)
+            self.GridCell['horizontal']*1, self.GridCell['verticle']*5.5)
         self.BoundingBoxWidthField.move(
-            self.GridCell['horizontal']*1, self.GridCell['verticle']*12)            
+            self.GridCell['horizontal']*3, self.GridCell['verticle']*10)            
         self.BoundingBoxHeightField.move(
-            self.GridCell['horizontal']*1, self.GridCell['verticle']*16)                
+            self.GridCell['horizontal']*14, self.GridCell['verticle']*10)                
+        self.FixedBoxChecked.move(
+            self.GridCell['horizontal']*1, self.GridCell['verticle']*8.5)            
         self.WidthLabel.move(
-            self.GridCell['horizontal']*1, self.GridCell['verticle']*10)            
+            self.GridCell['horizontal']*1, self.GridCell['verticle']*10)
         self.HeightLabel.move(
-            self.GridCell['horizontal']*1, self.GridCell['verticle']*14)
+            self.GridCell['horizontal']*11.8, self.GridCell['verticle']*10)
+        self.FixedBoxChecked.stateChanged.connect(self.fixedBoxCheckedHandler)
         SelectButton.clicked.connect(self.seletFolderInput)
         SelectButton2.clicked.connect(self.seletFolderAnnotation)
         GoButton.clicked.connect(self.Navigate)
@@ -119,8 +131,9 @@ class FolderSelectionUI(widget):
     
         
 class Main(widget):
-    def __init__(self,Image_folder_path,Annotation_folder_path,bbox_width,bbox_height):
+    def __init__(self,Image_folder_path,Annotation_folder_path,bbox_width,bbox_height,fixed = False):
         super(Main, self).__init__()
+        self.Fixed = fixed
         self.ImageDirectory = Image_folder_path
         self.bboxRatios = [bbox_width,bbox_height]
         self.CurrentStatusLabel = widgets.QLabel('',self)
@@ -141,7 +154,13 @@ class Main(widget):
             'verticle': self.dims['height']/20, 'horizontal': self.dims['width']/20}
         self.setWindowTitle("TransformTool")
         self.Image = widgets.QLabel(self)
-        self.Image.mousePressEvent = self.getPixel
+        self.pmi = gui.QImage(
+        self.Image_cv2.data, self.Image_cv2.shape[1], self.Image_cv2.shape[0], self.Image_cv2.shape[1]*3, gui.QImage.Format_RGB888)
+        self.rubberband = widgets.QRubberBand(widgets.QRubberBand.Rectangle,self)
+        self.begin = QtCore.QPoint()
+        self.end = QtCore.QPoint()
+        if self.Fixed:
+            self.Image.mousePressEvent = self.getPixel
         self.currentTransform = ''
         self.setGeometry(self.dims['left'], self.dims['top'],
                          self.dims['width'], self.dims['height'])                 
@@ -150,20 +169,49 @@ class Main(widget):
     def getPixel(self,event):
         center = {'x':event.pos().x(),'y':event.pos().y()}
         self.Image_cv2 ,topleft,bottomright= BB.DrawBox(self.Image_cv2,center,self.bboxRatios)
-        self.curr_image_meta.append(obj("person",topleft,bottomright))
+        self.curr_image_meta.append(obj("person",topleft,bottomright))#make this label
         self.Load_Screen(read = False)
+
+    def check(self,pos):
+        if(pos.x()<self.GridCell['horizontal']*1 or pos.x()>self.GridCell['horizontal']*1+self.Image_cv2.shape[1]):
+            return 0
+        if(pos.y()<self.GridCell['verticle']*3 or pos.y()>self.GridCell['verticle']*3+self.Image_cv2.shape[0]):
+            return 0
+        return 1
+    
+    def mousePressEvent(self, event):
+        self.origin = event.pos()
+        if(not self.check(self.origin) or self.Fixed):
+            return
+        self.rubberband.setGeometry(
+            QtCore.QRect(self.origin, QtCore.QSize()))
+        self.rubberband.show()
+    
+
+    def mouseMoveEvent(self, event):
+        if self.rubberband.isVisible():
+            curr = event.pos()
+            if(not self.check(curr) or self.Fixed):
+                return
+            self.rubberband.setGeometry(
+                QtCore.QRect(self.origin, curr).normalized())
+
+    def mouseReleaseEvent(self, event):
+        if(self.Fixed):
+            return
+        if self.rubberband.isVisible():
+            self.rubberband.hide()
+
     
     def HandleNext(self):
         self.XML_GEN_DONE = False
         self.CurrentStatusLabel.setText('')
         self.curr_image_meta = []
         self.Image_List.remove(self.curr_image_path.split('/')[-1])
-        print(self.curr_image_path.split('/')[-1])
         if len(self.Image_List) == 0:
             self.close()
             exit()
         self.curr_image_path = os.path.join(self.ImageDirectory,self.Image_List[0])
-        print(self.Image_List)
         self.Load_Screen(True)
 
 
@@ -210,7 +258,7 @@ class Main(widget):
             self.Image_cv2 = cv2.imread(self.curr_image_path)
             self.ShapeActual = self.Image_cv2.shape
             self.Image_cv2 = cv2.resize(self.Image_cv2,(int(self.Image_cv2.shape[1]/2),int(self.Image_cv2.shape[0]/2)))
-        print(self.Image_cv2.shape[0])
+            
         self.dims = {'left': 50, 'right': 50,
                      'top': 10, 'width': (self.Image_cv2.shape[1])*1.2, 'height': (self.Image_cv2.shape[0])*1.5}
         self.GridCell = {
@@ -236,6 +284,9 @@ class Main(widget):
             self.Image_cv2.shape[1], self.Image_cv2.shape[0])
         self.Image.move(self.GridCell['horizontal']
                         * 1, self.GridCell['verticle']*3)
+        
+        
+
    
 
     def Home(self):
