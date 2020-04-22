@@ -7,8 +7,8 @@ def write_file(Image_shape,Object_list,Image_directory_path,Image_file_name):
     ET.SubElement(annotation, 'folder').text = Image_directory_path
     ET.SubElement(annotation, 'filename').text = Image_file_name
     size = ET.SubElement(annotation, 'size')
-    ET.SubElement(size, 'width').text = str(Image_shape[1])
-    ET.SubElement(size, 'height').text = str(Image_shape[0])
+    ET.SubElement(size, 'width').text = str(Image_shape[1]*2)#since this is display image width
+    ET.SubElement(size, 'height').text = str(Image_shape[0]*2)#since this is display image height
     ET.SubElement(size, 'depth').text = str(Image_shape[2])
     for obj in Object_list :
         ob = ET.SubElement(annotation, 'object')

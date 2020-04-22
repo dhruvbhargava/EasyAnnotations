@@ -201,6 +201,15 @@ class Main(widget):
             return
         if self.rubberband.isVisible():
             self.rubberband.hide()
+        coords = []
+        coords.append(self.origin.x()-self.GridCell['horizontal'])
+        coords.append(self.origin.y()-(self.GridCell['verticle']*3))
+        coords.append(event.pos().x()-self.GridCell['horizontal'])
+        coords.append(event.pos().y()-(self.GridCell['verticle']*3))
+        self.Image_cv2 ,topleft,bottomright= BB.DrawBoxUnsized(self.Image_cv2,coords)
+        self.curr_image_meta.append(obj("person",topleft,bottomright))
+        self.Load_Screen(read = False)
+
 
     
     def HandleNext(self):
