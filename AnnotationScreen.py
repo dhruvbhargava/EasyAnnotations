@@ -11,10 +11,27 @@ from BoundingBox import TaggedObject as obj
 from SelectorLayover import SelectorOverlay as SO
 # from Generators import Generator  as gen
 
+class labelDialog(widgets.QDialog):
+     def __init__(self, *args, **kwargs):
+        super(labelDialog, self).__init__(*args, **kwargs)
+        
+        self.setWindowTitle("HELLO!")
+        # QBtn = widgets.QDialogButtonBox.Ok | widgets.QDialogButtonBox.Cancel
+        
+        # self.buttonBox = widgets.QDialogButtonBox(QBtn)
+        # self.buttonBox.accepted.connect(self.accept)
+        # self.buttonBox.rejected.connect(self.reject)
+        self.label = widgets.QLineEdit()
+        self.layout = widgets.QVBoxLayout()
+        self.layout.addWidget(self.label)
+        self.setLayout(self.layout)
+
+
 class AnnotaionScreen(widget):
     def __init__(self,Image_folder_path,Annotation_folder_path,bbox_width,bbox_height,Generator,fixed = False):
         super(AnnotaionScreen, self).__init__()
         self.Fixed = fixed
+        self.currIndex = 0
         self.ImageDirectory = Image_folder_path
         self.bboxRatios = [bbox_width,bbox_height]
         self.CurrentStatusLabel = widgets.QLabel('',self)
@@ -31,7 +48,7 @@ class AnnotaionScreen(widget):
         self.ShapeActual = self.Image_cv2.shape
         self.Image_cv2 = cv2.resize(self.Image_cv2,(int(self.Image_cv2.shape[1]/2),int(self.Image_cv2.shape[0]/2)))
         self.dims = {'left': 50, 'right': 50,
-                     'top': 10, 'width': (self.Image_cv2.shape[1])*1.2, 'height': (self.Image_cv2.shape[0])*1.5}
+                     'top': 10, 'width': (self.Image_cv2.shape[1])*1.8, 'height': (self.Image_cv2.shape[0])*1.3}
         self.GridCell = {
             'verticle': self.dims['height']/20, 'horizontal': self.dims['width']/20}
         self.setWindowTitle("TransformTool")
@@ -53,13 +70,21 @@ class AnnotaionScreen(widget):
         self.Home()                         
 
     def renderFixedBox(self,event):
+        if not self.Fixed:
+            return
         center = {'x':event.pos().x(),'y':event.pos().y()}
-        self.Image_cv2 ,topleft,bottomright= BB.DrawBoxFixed(self.Image_cv2,center,self.bboxRatios)
-        self.curr_image_meta.append(obj("person",topleft,bottomright))#make this label
+        if not self.checkValidArea(event.pos()):
+            return
+        label = self.LabellingPopup(event.pos())
+        self.Image_cv2 ,topleft,bottomright,dtp,dbr= BB.DrawBoxFixed(label,self.Image_cv2,center,self.bboxRatios)
+        tl = (center['x']-int(self.bboxRatios[0])/2,center['y']-int(self.bboxRatios[1])/2)
+        br= (center['x']+int(self.bboxRatios[0])/2,center['y']+int(self.bboxRatios[1])/2)
+        self.curr_image_meta.append(obj(label,topleft,bottomright,tl,br))
+        self.LabelsList.addItem("Object {}: {}".format(len(self.curr_image_meta),label))
         self.loadScreen(read = False)
 
     def checkValidArea(self,pos):
-        if(pos.x()<self.GridCell['horizontal']*1 or pos.x()>self.GridCell['horizontal']*1+self.Image_cv2.shape[1]):
+        if(pos.x()<self.GridCell['horizontal']*1 or pos.x()>self.GridCell['horizontal']+self.Image_cv2.shape[1]):
             return 0
         if(pos.y()<self.GridCell['verticle']*3 or pos.y()>self.GridCell['verticle']*3+self.Image_cv2.shape[0]):
             return 0
@@ -68,42 +93,50 @@ class AnnotaionScreen(widget):
     def variableBoxInit(self, event):
         self.origin = event.pos()
         if(not self.checkValidArea(self.origin) or self.Fixed):
+            print(self.origin)
             return
         self.rubberband.setGeometry(
             QtCore.QRect(self.origin, QtCore.QSize()))
         self.rubberband.show()
     
     def buildVariableBox(self, event):
-        if self.rubberband.isVisible():
-            curr = event.pos()
-            if(not self.checkValidArea(curr) or self.Fixed):
+        curr = event.pos()
+        if(not self.checkValidArea(curr) or self.Fixed or not self.checkValidArea(self.origin)):
                 return
+        if self.rubberband.isVisible():
+        
             self.rubberband.setGeometry(
                 QtCore.QRect(self.origin, curr).normalized())
 
     def renderVariableBox(self, event):
         if(self.Fixed):
             return
+        if not self.checkValidArea(event.pos()) or not self.checkValidArea(self.origin) or abs(event.pos().x()-self.origin.x())<10 or abs(event.pos().y()-self.origin.y())<10:
+            return
+        post = event.pos()
+        label = self.LabellingPopup(event.pos())
         if self.rubberband.isVisible():
             self.rubberband.hide()
         coords = []
         coords.append(self.origin.x()-self.GridCell['horizontal'])
         coords.append(self.origin.y()-(self.GridCell['verticle']*3))
-        coords.append(event.pos().x()-self.GridCell['horizontal'])
-        coords.append(event.pos().y()-(self.GridCell['verticle']*3))
-        self.Image_cv2 ,topleft,bottomright= BB.DrawBoxVariable(self.Image_cv2,coords)
-        self.curr_image_meta.append(obj("person",topleft,bottomright))
+        coords.append(post.x()-self.GridCell['horizontal'])
+        coords.append(post.y()-(self.GridCell['verticle']*3))
+        self.Image_cv2 ,topleft,bottomright,dtp,dbr= BB.DrawBoxVariable(label,self.Image_cv2,coords)
+        self.curr_image_meta.append(obj(label,topleft,bottomright,(int(self.origin.x()+2),int(self.origin.y()+2)),(int(post.x()-2),int(post.y()-2))))
+        self.LabelsList.addItem("Object {}: {}".format(len(self.curr_image_meta),label))
         self.loadScreen(read = False)
     
     def handleNext(self):
         self.XML_GEN_DONE = False
         self.CurrentStatusLabel.setText('')
         self.curr_image_meta = []
-        self.Image_List.remove(self.curr_image_path.split('/')[-1])
-        if len(self.Image_List) == 0:
+        self.currIndex+=1
+        # self.Image_List.remove(self.curr_image_path.split('/')[-1])
+        if len(self.Image_List) == self.currIndex:
             self.close()
             exit()
-        self.curr_image_path = os.path.join(self.ImageDirectory,self.Image_List[0])
+        self.curr_image_path = os.path.join(self.ImageDirectory,self.Image_List[self.currIndex])
         self.loadScreen(True)
 
     def handleGenerate(self):
@@ -113,9 +146,9 @@ class AnnotaionScreen(widget):
         split_names = self.curr_image_path.split('/')
         image_file_name = split_names[-1]
         if '.jpeg' in image_file_name :
-            xml_file_name = image_file_name.replace('.jpeg','.xml')
+            xml_file_name = image_file_name.replace('.jpeg','.xml')#modularize
         elif '.jpg' in image_file_name :
-            xml_file_name = image_file_name.replace('.jpg','.xml')
+            xml_file_name = image_file_name.replace('.jpg','.xml')#modularize
         elif '.png' in image_file_name :
             xml_file_name = image_file_name.replace('.png','.xml')
         elif '.JPG' in image_file_name :
@@ -144,6 +177,16 @@ class AnnotaionScreen(widget):
         self.CurrentStatusLabel.setText("")
         self.loadScreen(True)
 
+    def highlight(self,index):
+        index = index.row()
+        tpl = self.curr_image_meta[index].display_tl
+        print(tpl)
+        
+        print(self.curr_image_meta[index])
+        btm = self.curr_image_meta[index].display_br
+        self.rubberband.setGeometry(btm[0],btm[1],tpl[0],tpl[1])
+        self.rubberband.show()
+
     def loadScreen(self,read):
         if read:
             self.Image_cv2 = cv2.imread(self.curr_image_path)
@@ -151,37 +194,63 @@ class AnnotaionScreen(widget):
             self.Image_cv2 = cv2.resize(self.Image_cv2,(int(self.Image_cv2.shape[1]/2),int(self.Image_cv2.shape[0]/2)))
             
         self.dims = {'left': 50, 'right': 50,
-                     'top': 10, 'width': (self.Image_cv2.shape[1])*1.2, 'height': (self.Image_cv2.shape[0])*1.5}
+                     'top': 10, 'width': (self.Image_cv2.shape[1])*1.8, 'height': (self.Image_cv2.shape[0])*1.3}
         self.GridCell = {
             'verticle': self.dims['height']/20, 'horizontal': self.dims['width']/20}
         self.setGeometry(self.dims['left'], self.dims['top'],
                          self.dims['width'], self.dims['height'])   
         self.NextButton.move(self.GridCell['horizontal']
-                        * 1, self.GridCell['verticle']*1)
+                        * 10.7, self.GridCell['verticle']*1)
         self.CurrentStatusLabel.move(self.GridCell['horizontal']
                         * 7, self.GridCell['verticle']*1)                        
-        self.GenerateButton.move(self.GridCell['horizontal']*1,
-                    self.GridCell['verticle']*18)
+        self.GenerateButton.move(self.GridCell['horizontal']*17.5,
+                    self.GridCell['verticle']*17.5)
         self.UndoButton.move(
-            self.GridCell['horizontal']*15, self.GridCell['verticle']*18)                         
+            self.GridCell['horizontal']*1, self.GridCell['verticle']*1)                         
+        self.LabelsList.resize(self.GridCell['horizontal']
+                        * 6, self.GridCell['verticle']*14)
+        self.LabelsList.move(self.GridCell['horizontal']*13,
+                    self.GridCell['verticle']*3)
         self.pmi = gui.QImage(
             self.Image_cv2.data, self.Image_cv2.shape[1], self.Image_cv2.shape[0], self.Image_cv2.shape[1]*3, gui.QImage.Format_RGB888)
         self.PixMap = gui.QPixmap(self.pmi)
-        
+        self.LabelsList.clicked[QtCore.QModelIndex].connect(self.highlight)
         # self.PixMap = self.PixMap.scaled(
         #     self.GridCell['horizontal']*18, self.GridCell['verticle']*13)
         self.Image.setPixmap(self.PixMap)
+        effect = widgets.QGraphicsDropShadowEffect(self)
+        effect.setBlurRadius(20.0)
+        effect.setXOffset(20.0)
+        effect.setYOffset(20.0)
+        effect.setColor(gui.QColor(0,0,0,250))
+        # self.Image.setGraphicsEffect(effect)
+        self.LabelsLabel.move(self.GridCell['horizontal']*13,
+                    self.GridCell['verticle']*1.5)
         self.Image.resize(
             self.Image_cv2.shape[1], self.Image_cv2.shape[0])
         self.Image.move(self.GridCell['horizontal']
                         * 1, self.GridCell['verticle']*3)
-        
+
+
+    def LabellingPopup(self,pos):
+        labelpop = labelDialog(self) 
+        labelpop.setWindowFlag(QtCore.Qt.CustomizeWindowHint,True)
+        labelpop.setWindowFlag(QtCore.Qt.WindowCloseButtonHint,False)
+        labelpop.move(pos.x(),pos.y())
+        labelpop.setWindowTitle("Label:")
+        # labelpop.setWindowModality(QtCore.Qt.ApplicationModal)
+        labelpop.exec_()
+        return labelpop.label.text()
+
     #The UI Component
     def Home(self):
         self.setWindowTitle("Annotations")
         self.NextButton = widgets.QPushButton('Next',self)
         self.UndoButton = widgets.QPushButton ('Undo',self)
-        self.GenerateButton = widgets.QPushButton('Gen XML', self)
+        self.GenerateButton = widgets.QPushButton('Generate', self)
+        self.LabelsList = widgets.QListWidget(self)
+        self.LabelsLabel = widgets.QLabel('Object Labels',self)
+        self.LabelsLabel.setFont(gui.QFont("Aerial",20,gui.QFont.Thin))
         self.loadScreen(True)
         self.NextButton.clicked.connect(self.handleNext)
         self.GenerateButton.clicked.connect(self.handleGenerate)

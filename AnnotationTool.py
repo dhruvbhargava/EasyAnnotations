@@ -143,7 +143,10 @@ class StartScreen(widget):
 
     
 if __name__ == "__main__":
-    App = app(sys.argv)
+    App = app(sys.argv) 
+    stream = QtCore.QFile("./Diffnes/Diffnes.qss")
+    stream.open(QtCore.QIODevice.ReadOnly)
+    App.setStyleSheet(QtCore.QTextStream(stream).readAll())
     w = StartScreen()
     w.show()
     sys.exit(App.exec_())
