@@ -29,6 +29,8 @@ class AnnotaionScreen(widget):
     def __init__(self,Image_folder_path,Annotation_folder_path,bbox_width,bbox_height,Generator,fixed = False):
         super(AnnotaionScreen, self).__init__()
         self.Fixed = fixed
+        if self.Fixed:
+            self.bboxRatios = [int(bbox_width),int(bbox_height)]
         self.currIndex = 0
         self.ImageDirectory = Image_folder_path
         self.CurrentStatusLabel = widgets.QLabel('',self)
@@ -45,7 +47,6 @@ class AnnotaionScreen(widget):
         self.ShapeActual = self.Image_cv2.shape
         self.DisplayBox = (400,600)
         self.factor = (self.DisplayBox[0]/self.ShapeActual[0],self.DisplayBox[1]/self.ShapeActual[1])
-        self.bboxRatios = [int(bbox_width),int(bbox_height)]
         self.Image_cv2 = cv2.resize(self.Image_cv2,(int(600),int(400)))
         self.dims = {'left': 50, 'right': 50,
                      'top': 10, 'width': (self.Image_cv2.shape[1])*1.8, 'height': (self.Image_cv2.shape[0])*1.3}
@@ -129,6 +130,7 @@ class AnnotaionScreen(widget):
         self.loadScreen(read = False)
     
     def handleNext(self):
+        self.UndoButton.setEnabled(True)
         self.XML_GEN_DONE = False
         self.CurrentStatusLabel.setText('')
         self.curr_image_meta = []
@@ -163,6 +165,7 @@ class AnnotaionScreen(widget):
             xml_file.write(generated_string)    
         self.CurrentStatusLabel.setText("*DONE!*")
         self.XML_GEN_DONE = True
+        self.UndoButton.setEnabled(False)
     
     def handleReset(self):
         if self.XML_GEN_DONE :
@@ -175,11 +178,12 @@ class AnnotaionScreen(widget):
             elif '.JPG' in self.curr_image_path :
                 xml_file_name = self.curr_image_path.split('/')[-1].replace('.JPG','.xml')        
             
-            os.remove(os.path.join(self.SaveAnnotationPath,xml_file_name))
+            # os.remove(os.path.join(self.SaveAnnotationPath,xml_file_name))
         self.curr_image_meta = []
         self.LabelsList.clear()
         self.CurrentStatusLabel.setText("")
         self.loadScreen(True)
+        
 
     def highlight(self,index):
         index = index.row()
@@ -194,7 +198,7 @@ class AnnotaionScreen(widget):
             self.ShapeActual = self.Image_cv2.shape
             self.factor = (self.DisplayBox[0]/self.ShapeActual[0],self.DisplayBox[1]/self.ShapeActual[1])
             self.Image_cv2 = cv2.resize(self.Image_cv2,(int(600),int(400)))
-            
+        
         self.dims = {'left': 50, 'right': 50,
                      'top': 10, 'width': (self.Image_cv2.shape[1])*1.8, 'height': (self.Image_cv2.shape[0])*1.3}
         self.GridCell = {
