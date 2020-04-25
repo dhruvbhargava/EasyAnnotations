@@ -31,7 +31,6 @@ class AnnotaionScreen(widget):
         self.Fixed = fixed
         self.currIndex = 0
         self.ImageDirectory = Image_folder_path
-        self.bboxRatios = [bbox_width,bbox_height]
         self.CurrentStatusLabel = widgets.QLabel('',self)
         self.SaveAnnotationPath = Annotation_folder_path
         self.Image_List = []
@@ -46,6 +45,7 @@ class AnnotaionScreen(widget):
         self.ShapeActual = self.Image_cv2.shape
         self.DisplayBox = (400,600)
         self.factor = (self.DisplayBox[0]/self.ShapeActual[0],self.DisplayBox[1]/self.ShapeActual[1])
+        self.bboxRatios = [int(bbox_width),int(bbox_height)]
         self.Image_cv2 = cv2.resize(self.Image_cv2,(int(600),int(400)))
         self.dims = {'left': 50, 'right': 50,
                      'top': 10, 'width': (self.Image_cv2.shape[1])*1.8, 'height': (self.Image_cv2.shape[0])*1.3}
@@ -73,12 +73,14 @@ class AnnotaionScreen(widget):
         if not self.Fixed:
             return
         center = {'x':event.pos().x(),'y':event.pos().y()}
+        self.rubberband.setGeometry(0,0,0,0)
+        self.rubberband.hide()
         if not self.checkValidArea(event.pos()):
             return
         label = self.LabellingPopup(event.pos())
         self.Image_cv2 ,topleft,bottomright,dtp,dbr= BB.DrawBoxFixed(label,self.Image_cv2,center,self.bboxRatios,self.factor)
-        tl = (center['x']-int(self.bboxRatios[0])/2,center['y']-int(self.bboxRatios[1])/2)
-        br= (center['x']+int(self.bboxRatios[0])/2,center['y']+int(self.bboxRatios[1])/2)
+        tl = (max(center['x']-(int(self.bboxRatios[0])*self.factor[1]-self.GridCell['horizontal']),self.GridCell['horizontal']),max(center['y']-(int(self.bboxRatios[1])*self.factor[0]-3*self.GridCell['verticle']),3*self.GridCell['verticle']))
+        br= (min(center['x']+(int(self.bboxRatios[0])*self.factor[1]+self.GridCell['horizontal']),600+self.GridCell['horizontal']),min(center['y']+(int(self.bboxRatios[1])*self.factor[0]+3*self.GridCell['verticle']),400+3*self.GridCell["verticle"]))
         self.curr_image_meta.append(obj(label,topleft,bottomright,tl,br))
         self.LabelsList.addItem("Object {}: {}".format(len(self.curr_image_meta),label))
         self.loadScreen(read = False)
@@ -93,7 +95,6 @@ class AnnotaionScreen(widget):
     def variableBoxInit(self, event):
         self.origin = event.pos()
         if(not self.checkValidArea(self.origin) or self.Fixed):
-            print(self.origin)
             return
         self.rubberband.setGeometry(
             QtCore.QRect(self.origin, QtCore.QSize()))
@@ -143,6 +144,8 @@ class AnnotaionScreen(widget):
         if self.curr_image_meta == []:
             self.CurrentStatusLabel.setText("*NOTHING TO TAG*")
             return
+        if self.rubberband.isVisible():
+            self.rubberband.hide()
         split_names = self.curr_image_path.split('/')
         image_file_name = split_names[-1]
         if '.jpeg' in image_file_name :
@@ -181,9 +184,6 @@ class AnnotaionScreen(widget):
     def highlight(self,index):
         index = index.row()
         tpl = self.curr_image_meta[index].display_tl
-        print(tpl)
-        
-        print(self.curr_image_meta[index])
         btm = self.curr_image_meta[index].display_br
         self.rubberband.setGeometry(tpl[0],tpl[1],btm[0]-tpl[0],btm[1]-tpl[1])
         self.rubberband.show()
