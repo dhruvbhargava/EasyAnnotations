@@ -46,7 +46,9 @@ class AnnotaionScreen(widget):
         self.curr_image_meta = []
         self.Image_cv2 = cv2.imread(self.curr_image_path)
         self.ShapeActual = self.Image_cv2.shape
-        self.Image_cv2 = cv2.resize(self.Image_cv2,(int(self.Image_cv2.shape[1]/2),int(self.Image_cv2.shape[0]/2)))
+        self.DisplayBox = (400,600)
+        self.factor = (self.DisplayBox[0]/self.ShapeActual[0],self.DisplayBox[1]/self.ShapeActual[1])
+        self.Image_cv2 = cv2.resize(self.Image_cv2,(int(600),int(400)))
         self.dims = {'left': 50, 'right': 50,
                      'top': 10, 'width': (self.Image_cv2.shape[1])*1.8, 'height': (self.Image_cv2.shape[0])*1.3}
         self.GridCell = {
@@ -76,7 +78,7 @@ class AnnotaionScreen(widget):
         if not self.checkValidArea(event.pos()):
             return
         label = self.LabellingPopup(event.pos())
-        self.Image_cv2 ,topleft,bottomright,dtp,dbr= BB.DrawBoxFixed(label,self.Image_cv2,center,self.bboxRatios)
+        self.Image_cv2 ,topleft,bottomright,dtp,dbr= BB.DrawBoxFixed(label,self.Image_cv2,center,self.bboxRatios,self.factor)
         tl = (center['x']-int(self.bboxRatios[0])/2,center['y']-int(self.bboxRatios[1])/2)
         br= (center['x']+int(self.bboxRatios[0])/2,center['y']+int(self.bboxRatios[1])/2)
         self.curr_image_meta.append(obj(label,topleft,bottomright,tl,br))
@@ -122,8 +124,8 @@ class AnnotaionScreen(widget):
         coords.append(self.origin.y()-(self.GridCell['verticle']*3))
         coords.append(post.x()-self.GridCell['horizontal'])
         coords.append(post.y()-(self.GridCell['verticle']*3))
-        self.Image_cv2 ,topleft,bottomright,dtp,dbr= BB.DrawBoxVariable(label,self.Image_cv2,coords)
-        self.curr_image_meta.append(obj(label,topleft,bottomright,(int(self.origin.x()+2),int(self.origin.y()+2)),(int(post.x()-2),int(post.y()-2))))
+        self.Image_cv2 ,topleft,bottomright,dtp,dbr= BB.DrawBoxVariable(label,self.Image_cv2,coords,self.factor)
+        self.curr_image_meta.append(obj(label,topleft,bottomright,(int(self.origin.x()),int(self.origin.y())),(int(post.x()),int(post.y()))))
         self.LabelsList.addItem("Object {}: {}".format(len(self.curr_image_meta),label))
         self.loadScreen(read = False)
     
@@ -174,6 +176,7 @@ class AnnotaionScreen(widget):
             
             os.remove(os.path.join(self.SaveAnnotationPath,xml_file_name))
         self.curr_image_meta = []
+        self.LabelsList.clear()
         self.CurrentStatusLabel.setText("")
         self.loadScreen(True)
 
@@ -184,14 +187,15 @@ class AnnotaionScreen(widget):
         
         print(self.curr_image_meta[index])
         btm = self.curr_image_meta[index].display_br
-        self.rubberband.setGeometry(btm[0],btm[1],tpl[0],tpl[1])
+        self.rubberband.setGeometry(tpl[0],tpl[1],btm[0]-tpl[0],btm[1]-tpl[1])
         self.rubberband.show()
 
     def loadScreen(self,read):
         if read:
             self.Image_cv2 = cv2.imread(self.curr_image_path)
             self.ShapeActual = self.Image_cv2.shape
-            self.Image_cv2 = cv2.resize(self.Image_cv2,(int(self.Image_cv2.shape[1]/2),int(self.Image_cv2.shape[0]/2)))
+            self.factor = (self.DisplayBox[0]/self.ShapeActual[0],self.DisplayBox[1]/self.ShapeActual[1])
+            self.Image_cv2 = cv2.resize(self.Image_cv2,(int(600),int(400)))
             
         self.dims = {'left': 50, 'right': 50,
                      'top': 10, 'width': (self.Image_cv2.shape[1])*1.8, 'height': (self.Image_cv2.shape[0])*1.3}
@@ -202,7 +206,9 @@ class AnnotaionScreen(widget):
         self.NextButton.move(self.GridCell['horizontal']
                         * 10.7, self.GridCell['verticle']*1)
         self.CurrentStatusLabel.move(self.GridCell['horizontal']
-                        * 7, self.GridCell['verticle']*1)                        
+                        * 14, self.GridCell['verticle']*17.5)             
+        self.CurrentStatusLabel.resize(self.GridCell['horizontal']
+                        * 4, self.GridCell['verticle']*1)                                           
         self.GenerateButton.move(self.GridCell['horizontal']*17.5,
                     self.GridCell['verticle']*17.5)
         self.UndoButton.move(

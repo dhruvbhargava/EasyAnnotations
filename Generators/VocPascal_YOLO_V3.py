@@ -17,9 +17,9 @@ def write_file(Image_shape,Object_list,Image_directory_path,Image_file_name):
         ET.SubElement(ob, 'truncated').text = '0'
         ET.SubElement(ob, 'difficult').text = '0'
         bbox = ET.SubElement(ob, 'bndbox')
-        ET.SubElement(bbox, 'xmin').text = str(obj.topleft[0])
-        ET.SubElement(bbox, 'ymin').text = str(obj.topleft[1])
-        ET.SubElement(bbox, 'xmax').text = str(obj.bottomright[0])
-        ET.SubElement(bbox, 'ymax').text = str(obj.bottomright[1])
+        ET.SubElement(bbox, 'xmin').text = str(int(obj.topleft[0]))
+        ET.SubElement(bbox, 'ymin').text = str(int(obj.topleft[1]))
+        ET.SubElement(bbox, 'xmax').text = str(int(obj.bottomright[0]))
+        ET.SubElement(bbox, 'ymax').text = str(int(obj.bottomright[1]))
     xml_str = ET.tostring(annotation)
     return xml_str

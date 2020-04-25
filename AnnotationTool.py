@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import QWidget as widget
 import PyQt5.QtCore as QtCore
 import BoundingBox as BB
 from BoundingBox import TaggedObject as obj
-from SelectorLayover import SelectorOverlay as SO
 from AnnotationScreen import AnnotaionScreen as AnotScreen
 from Generators.Generator import Generator as Generator
 
